@@ -1,0 +1,50 @@
+name: Deploy to Environment (one AWS account, different regions)
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - staging
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment and region
+        id: env
+        run: |
+          BRANCH_NAME="${GITHUB_REF##*/}"
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            ENVIRONMENT="prod"
+            AWS_REGION="us-east-1"
+          elif [[ "$BRANCH_NAME" == "staging" ]]; then
+            ENVIRONMENT="staging"
+            AWS_REGION="us-east-2"
+          elif [[ "$BRANCH_NAME" == "dev" ]]; then
+            ENVIRONMENT="dev"
+            AWS_REGION="us-west-1"
+          else
+            echo "Unsupported branch: $BRANCH_NAME"
+            exit 1
+          fi
+
+          echo "ENVIRONMENT=$ENVIRONMENT" >> $GITHUB_ENV
+          echo "AWS_REGION=$AWS_REGION" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create S3 Bucket for ${{ env.ENVIRONMENT }}
+        run: |
+          chmod +x create-s3.sh
+          ./create-s3.sh "etech-app-${{ env.ENVIRONMENT }}-${GITHUB_SHA::7}" "${{ env.AWS_REGION }}"
