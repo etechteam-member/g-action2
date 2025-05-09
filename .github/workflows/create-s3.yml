@@ -47,4 +47,4 @@ jobs:
       - name: Create S3 Bucket for ${{ env.ENVIRONMENT }}
         run: |
           chmod +x create-s3.sh
-          ./create-s3.sh "etech-app-${{ env.ENVIRONMENT }}-${GITHUB_SHA::7}" "${{ env.AWS_REGION }}"
+          ./create-s3.sh "imma-app-${{ env.ENVIRONMENT }}-${GITHUB_SHA::7}" "${{ env.AWS_REGION }}"
